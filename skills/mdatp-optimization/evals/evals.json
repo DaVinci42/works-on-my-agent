@@ -43,6 +43,13 @@
       "expected_output": "Select only relevant local queries and filter health fields before sending output to the assistant. Treat paths and process lists as potentially private too. Preserve the original change status independently from verification commands; a healthy product does not establish a successful change or unchanged detection coverage. Do not change settings or upload logs.",
       "files": [],
       "assertions": ["Minimizes data before it reaches the assistant", "Preserves the original change exit status", "Does not equate healthy protection with successful changes", "Keeps the requested investigation read-only"]
+    },
+    {
+      "id": 7,
+      "prompt": "Offline reasoning only: the user ran `mdatp exclusion path add --path ./` which failed, and `/Library/Application Support/Microsoft/Defender/wdavdiag` consumes 1 GB. If they also use a custom package store such as `/nix`, explain why `wdavdaemon_enterprise` can still spike after AV folder exclusions and how to proceed.",
+      "expected_output": "Explain that `mdatp exclusion` requires `folder` or `file` with an absolute path rather than `path` or `./`. Clarify that AV folder exclusions (including on custom stores like `/nix`) do not suppress EDR Endpoint Security events; suggest verifying relevant built-in profiles with bounded `hot-event-sources` while cleaning up generated `hot_event_source_<UUID>.txt` reports, and report the stale `wdavdiag` `.zip` bundles without deleting files unauthorized.",
+      "files": [],
+      "assertions": ["Corrects `exclusion path add` to `exclusion folder/file add` with absolute path", "Distinguishes AV folder exclusions from EDR event monitoring", "Warns about cleaning up `hot_event_source_<UUID>.txt` reports", "Identifies stale `wdavdiag` diagnostic bundles without unauthorized deletion"]
     }
   ]
 }

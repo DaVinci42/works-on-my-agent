@@ -11,7 +11,7 @@ The skill and references describe procedures and example commands, not a success
 - Skill YAML metadata and naming passed the skill-creator format validator.
 - Local Markdown references resolve, code fences are balanced, and the main skill remains below 500 lines.
 - Bash examples passed syntax checking without executing real configuration changes.
-- Six synthetic scenarios have unique IDs and four assertions each. This validates the fixture structure, not independent model behavior.
+- Seven synthetic scenarios have unique IDs and four assertions each. This validates the fixture structure, not independent model behavior.
 - Synthetic checks verified that the selected health filter removes device identifiers while retaining relevant health fields and management markers.
 - A mocked configuration failure remained visible through its recorded change exit status even when later health queries succeeded.
 - Targeted publication checks cover personal absolute paths, UUID-shaped identifiers, private-key headers, obsolete session-reference names, and removed device-specific facts. Such checks are not a comprehensive secret scanner.
