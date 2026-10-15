@@ -1,0 +1,42 @@
+{
+  "skill_name": "background-task-progress",
+  "fixture_note": "All scenarios and values below are synthetic test fixtures, not records of a real device, organization, or session.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Offline reasoning only, do not execute commands: The user wants to run `cargo test --workspace` (takes ~8 minutes) in the background so they can immediately ask questions about another module without blocking the session. How should you launch and track it?",
+      "expected_output": "Launch the command in the background (using host `run_in_background`, Bash `{ trap '' HUP; ...; } </dev/null >\"$LOG_FILE\" 2>&1 &`, or PowerShell `Start-Process -PassThru` with `-EncodedCommand`), verify startup after 1 second, report the literal `BG_PID`/`shell_id` and `LOG_FILE` concisely, and end the turn immediately so the user can ask questions. Piggyback non-blocking status checks on subsequent user turns.",
+      "files": [],
+      "assertions": [
+        "Launches the command in the background without blocking the foreground turn",
+        "Verifies immediate startup state",
+        "Ends the turn after reporting PID or shell_id so the session stays responsive",
+        "Piggybacks non-blocking status checks on subsequent user turns"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Offline reasoning only, do not execute commands: The user asks to run a data migration script in the background and automatically report progress every 15 seconds while they are idle, while keeping the task safe if they interrupt to ask a question. How should you implement the polling?",
+      "expected_output": "Launch the migration detached in the background, then execute one bounded 15-second wait-and-check per tool call (exiting early if the process finishes via `kill -0` loop in Bash or `$p.WaitForExit(15000)` in PowerShell), emit a brief progress update between tool calls, and repeat until completion. Never loop until completion inside a single shell call, and note that interrupting the turn leaves the detached OS process running.",
+      "files": [],
+      "assertions": [
+        "Uses one bounded wait-and-check per tool call rather than an in-shell loop until completion",
+        "Emits visible progress updates between tool calls",
+        "Caps log inspection (`tail -n` or `Get-Content -Tail`) instead of reading full logs",
+        "Preserves the detached background process if the user interrupts the turn"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Offline reasoning only, do not execute commands: Why do `python3 -c 'import time; time.sleep(60)' &` in Bash and `Start-Job` in PowerShell fail or block in CLI agent tool calls, and what quote-safe patterns should be used instead on both platforms?",
+      "expected_output": "In Bash, a raw `&` inherits open stdout/stderr/stdin pipes so the tool runner blocks waiting for EOF, and wrapping with `sh -c '...'` breaks when the command contains single quotes; use a command group `{ trap '' HUP; <command>; ...; } </dev/null >\"$LOG_FILE\" 2>&1 &` instead. In PowerShell, `Start-Job` runs inside the current PowerShell session and terminates as soon as the tool call's subshell exits; use `Start-Process -PassThru` with `-EncodedCommand`, `-RedirectStandardOutput`/`-RedirectStandardError`, and `-WindowStyle Hidden` to create a quote-safe independent OS process.",
+      "files": [],
+      "assertions": [
+        "Identifies inherited stdout/stderr/stdin pipes as the cause of Bash tool runner blocking",
+        "Explains that PowerShell `Start-Job` dies when the tool call's session exits",
+        "Recommends `Start-Process -PassThru` with redirected output on PowerShell/Windows",
+        "Stays read-only without executing commands"
+      ]
+    }
+  ]
+}

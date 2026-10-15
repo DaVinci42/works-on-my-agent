@@ -22,13 +22,14 @@ When adding or removing a skill, update the skills table in `README.md`.
 
 ### Current Skills
 
+- **`background-task-progress`** (`skills/background-task-progress/`): Runs long-running commands detached in the background across Bash and PowerShell (`pwsh`) so the foreground LLM session stays responsive for user Q&A, and supports both on-demand status piggybacking and bounded scheduled progress reporting.
 - **`mdatp-optimization`** (`skills/mdatp-optimization/`): Guides macOS users through diagnosing Microsoft Defender for Endpoint (`mdatp` / `wdavdaemon`) CPU overhead, applying built-in performance profiles, managing scoped exclusions, and minimizing optional diagnostic reporting/sample submission within organizational policy boundaries.
 
 ## Skill Authoring & Modification Conventions
 
 1. **Frontmatter & Line Limits**:
    - Every `SKILL.md` starts with YAML frontmatter containing `name` (matching the directory name), `description` (clear trigger conditions and scope), and optional `compatibility`.
-   - Keep `SKILL.md` under 500 lines. Offload detailed command inventories or specialized procedures into `references/*.md` and link to them via relative Markdown links (e.g., `[references/exclusions.md](references/exclusions.md)`).
+   - Keep `SKILL.md` under 500 lines. Prefer lean, zero-dependency instructions in `SKILL.md` that leverage native agent tools and standard shell primitives before introducing custom wrapper scripts (`scripts/`) or extra reference files (`references/`).
 
 2. **Edit vs. Execution Boundary**:
    - Editing or validating a skill in this repository **does not** authorize running system-modifying commands (such as `mdatp config`, `mdatp exclusion`, or `mdatp performance-profiles apply`) on the host machine.
@@ -40,6 +41,8 @@ When adding or removing a skill, update the skills table in `README.md`.
 
 4. **Shell Snippet Conventions in Skills**:
    - Capture and display the exit status of state-changing commands immediately (`printf 'change_exit_status=%s\n' "$?"`) before running subsequent verification commands (such as `mdatp health --field healthy`), so a passing health check does not mask a rejected configuration change.
+   - Never assume in-memory shell variables (`$PID`, `$$`, `$job`) or session-bound background jobs (such as PowerShell `Start-Job`) persist across separate agent tool calls; print and reuse literal identifiers/paths and detach standard pipes (`</dev/null >"$LOG_FILE" 2>&1 &` or `Start-Process -PassThru`).
+   - Avoid fragile nested quote wrapping (`sh -c '<command>'` or `pwsh -Command "<command>"`) in command templates; use Bash command groups (`{ ...; }`) or PowerShell `-EncodedCommand` so arbitrary user commands containing quotes do not break.
    - Filter sensitive device/org identifiers locally before output reaches the assistant (e.g., filtering `mdatp health` with `/usr/bin/awk`).
    - Do not assume leaf CLI subcommands exit on `--help` (for example, some `mdatp diagnostic` leaf commands start continuous monitoring immediately).
 

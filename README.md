@@ -6,6 +6,7 @@ Personal agent skills. They work on my agent. Yours may need instructions.
 
 | Skill | Purpose |
 |---|---|
+| [background-task-progress](skills/background-task-progress/SKILL.md) | Run long-running commands in the background without blocking the foreground session, answer questions while tasks run, and report incremental progress on demand or at scheduled intervals. |
 | [mdatp-optimization](skills/mdatp-optimization/SKILL.md) | Diagnose Microsoft Defender performance on macOS, maintain scoped exclusions, and minimize optional reporting where policy permits. |
 
 ## Repository layout
