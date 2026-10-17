@@ -22,6 +22,7 @@ When adding or removing a skill, update the skills table in `README.md`.
 
 ### Current Skills
 
+- **`crush-copilot-delegate`** (`skills/crush-copilot-delegate/`): Delegates bounded tasks through Crush using cached, account-discovered GitHub Copilot candidates; keeps planning and verification in the parent model.
 - **`background-task-progress`** (`skills/background-task-progress/`): Runs long-running commands detached in the background across Bash and PowerShell (`pwsh`) so the foreground LLM session stays responsive for user Q&A, and supports both on-demand status piggybacking and bounded scheduled progress reporting.
 - **`mdatp-optimization`** (`skills/mdatp-optimization/`): Guides macOS users through diagnosing Microsoft Defender for Endpoint (`mdatp` / `wdavdaemon`) CPU overhead, applying built-in performance profiles, managing scoped exclusions, and minimizing optional diagnostic reporting/sample submission within organizational policy boundaries.
 
@@ -62,6 +63,8 @@ rg -n '(/Users/[A-Za-z0-9._-]+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9
 ```
 
 When modifying bash code blocks inside Markdown files or scripts, syntax-check them with `bash -n` rather than executing host-mutating commands directly.
+
+For every added or modified Python file, require passing `ruff check`, `ruff format --check`, and `basedpyright` with zero errors or warnings. Run these checks on the affected skill directory, including its Python evaluation fixtures, and run its offline unit tests. Fix annotations and code rather than suppressing diagnostics or weakening checker settings.
 
 ## Evolving Skills from Operator History
 

@@ -8,6 +8,7 @@ Personal agent skills. They work on my agent. Yours may need instructions.
 |---|---|
 | [background-task-progress](skills/background-task-progress/SKILL.md) | Run long-running commands in the background without blocking the foreground session, answer questions while tasks run, and report incremental progress on demand or at scheduled intervals. |
 | [mdatp-optimization](skills/mdatp-optimization/SKILL.md) | Diagnose Microsoft Defender performance on macOS, maintain scoped exclusions, and minimize optional reporting where policy permits. |
+| [crush-copilot-delegate](skills/crush-copilot-delegate/SKILL.md) | Delegate bounded tasks through Crush to dynamically discovered GitHub Copilot models, with parent-side verification. |
 
 ## Repository layout
 
