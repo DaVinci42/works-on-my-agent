@@ -23,7 +23,6 @@ When adding or removing a skill, update the skills table in `README.md`.
 ### Current Skills
 
 - **`nixpkgs-version-bump`** (`skills/nixpkgs-version-bump/`): Automates Nixpkgs package version updates from an issue link or package name through duplicate PR / `nixpkgs-update` log checks, `upstream/master` sync, `nix-update --commit`, sandbox test triage, `nixpkgs-review`, and Draft PR template preparation (without auto-running `gh pr create`).
-- **`crush-copilot-delegate`** (`skills/crush-copilot-delegate/`): Delegates bounded tasks through Crush using cached, account-discovered GitHub Copilot candidates; keeps planning and verification in the parent model.
 - **`background-task-progress`** (`skills/background-task-progress/`): Runs long-running commands detached in the background across Bash and PowerShell (`pwsh`) so the foreground LLM session stays responsive for user Q&A, and supports both on-demand status piggybacking and bounded scheduled progress reporting.
 - **`mdatp-optimization`** (`skills/mdatp-optimization/`): Guides macOS users through diagnosing Microsoft Defender for Endpoint (`mdatp` / `wdavdaemon`) CPU overhead, applying built-in performance profiles, managing scoped exclusions, and minimizing optional diagnostic reporting/sample submission within organizational policy boundaries.
 
