@@ -5,13 +5,13 @@
     {
       "id": 1,
       "prompt": "Offline reasoning only, do not execute commands: The user provides `https://github.com/NixOS/nixpkgs/issues/999999` asking to bump `djv` in their local `nixpkgs` repository and prepare an upstream PR. What sequence of checks and commands should you follow from start to finish?",
-      "expected_output": "1) In parallel, inspect the issue (`gh issue view 999999 -R NixOS/nixpkgs`), check open duplicate PRs (`gh pr list -R NixOS/nixpkgs --state open --search \"djv: in:title\"`), and inspect the latest log entry at `https://nixpkgs-update-logs.nixos.org/djv/`. 2) Verify a clean checkout, switch to `master`, run `git pull --rebase upstream master` (`gprum` equivalent), and create branch `update-djv`. 3) Run `nix-update --commit djv` (defaulting to latest version; offload slow builds/reviews via `agent_dispatch` when available). 4) Fix any build/patch/sandbox test issues locally, run `nixfmt --check`, build with `nix-build --option sandbox true -A djv`, smoke-test the binary, amend into a single `djv: <old> -> <new>` commit with `Assisted-by:` trailer, and run `nixpkgs-review rev HEAD --no-shell`. 5) Prepare the PR body preserving `.github/PULL_REQUEST_TEMPLATE.md` verbatim with `Resolves #999999` at top, and provide `gh auth status` + push + `gh pr create --draft` instructions without executing `gh pr create` automatically.",
+      "expected_output": "1) In parallel, inspect the issue (`gh issue view 999999 -R NixOS/nixpkgs`), check open duplicate PRs (`gh pr list -R NixOS/nixpkgs --state open --search \"djv: in:title\"`), inspect the latest log entry at `https://nixpkgs-update-logs.nixos.org/djv/`, and evaluate `djv` platform support (`meta.platforms` / `lib.meta.availableOn` across `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`). 2) Verify a clean checkout, switch to `master`, run `git pull --rebase upstream master` (`gprum` equivalent), and create branch `update-djv`. 3) Run `nix-update --commit djv` (defaulting to latest version; offload slow builds/reviews via `agent_dispatch` when available). 4) Fix any build/patch/sandbox test issues locally, run `nixfmt --check`, build with `nix-build --option sandbox true -A djv` (if supported on the host), smoke-test the binary, amend into a single `djv: <old> -> <new>` commit with `Assisted-by:` trailer, and run `nixpkgs-review rev HEAD --no-shell`. 5) Prepare the PR body preserving `.github/PULL_REQUEST_TEMPLATE.md` verbatim with `Resolves #999999` at top, and provide `gh auth status` + push + `gh pr create --draft` instructions without executing `gh pr create` automatically.",
       "files": [],
       "assertions": [
-        "Checks open Nixpkgs PRs (`djv: in:title`) and the last entry at `https://nixpkgs-update-logs.nixos.org/djv/` before starting",
+        "Checks open Nixpkgs PRs (`djv: in:title`), the last entry at `https://nixpkgs-update-logs.nixos.org/djv/`, and `djv` supported platforms (`lib.meta.availableOn` / `meta.platforms`) before starting",
         "Uses explicit `git checkout master && git pull --rebase upstream master` rather than relying on an interactive `gprum` shell alias",
         "Runs `nix-update --commit djv` targeting the latest version by default and verifies with `nixfmt --check` and `nixpkgs-review rev HEAD`",
-        "Uses `Resolves #999999` in the PR template and does not execute `gh pr create` directly to avoid multi-account mistakes"
+        "Uses `Resolves #999999` in the PR template and does not execute `gh pr create` directly without explicit request"
       ]
     },
     {
@@ -35,6 +35,18 @@
         "Includes both `Resolves #123456` and `Fix: https://nixpkgs-update-logs.nixos.org/foo-tool/2026-10-01.log` at the top of the PR description",
         "Preserves `.github/PULL_REQUEST_TEMPLATE.md` verbatim including HTML comments and only marks verified checkboxes",
         "Does not run `gh pr create` automatically, outputting the prepared body and `gh auth status` / `--draft` commands instead"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Offline reasoning only, do not execute commands: Draft PR `#888888` for package `linux-only-daemon` (`meta.platforms = lib.platforms.linux;`) was just opened on `NixOS/nixpkgs`, and the user has a `<github-user>/nixpkgs-review-gha` fork with `review.yml`. Should you automatically trigger `review.yml` right away, and once the user explicitly authorizes running the review Action, how should you wait for PR evaluation CI and dispatch it?",
+      "expected_output": "Do not trigger `nixpkgs-review-gha` automatically—wait for explicit user authorization first. Once authorized: 1) Evaluate `linux-only-daemon` platform support via `lib.meta.availableOn` across `[ \"x86_64-linux\" \"aarch64-linux\" \"aarch64-darwin\" ]`: because `meta.platforms = lib.platforms.linux`, `x86_64-linux` and `aarch64-linux` are `true` while `aarch64-darwin` is `false`. Always set `x86_64-darwin=no` (never run Intel macOS) and set `aarch64-darwin=no` because Darwin is unsupported. 2) Use an async subagent (`agent_dispatch`, never foreground `sleep` polling) to poll `gh pr checks 888888 -R NixOS/nixpkgs --json name,state,bucket` until `Eval Summary` succeeds (aborting immediately if any `Eval` check fails or cancels). 3) Dispatch `gh workflow run review.yml -R \"<github-user>/nixpkgs-review-gha\" -f pr=888888 -f x86_64-linux=true -f aarch64-linux=true -f x86_64-darwin=no -f aarch64-darwin=no`, capture its exit status, confirm the two Linux matrix jobs spawned after `prepare`, and report the workflow run URL.",
+      "files": [],
+      "assertions": [
+        "States that `gh workflow run review.yml` requires explicit user authorization and must not be triggered automatically after opening a PR",
+        "Evaluates `meta.platforms` / `lib.meta.availableOn` to map `x86_64-linux=true`, `aarch64-linux=true`, and `aarch64-darwin=no` for a Linux-only package",
+        "Explicitly passes `x86_64-darwin=no` so Intel macOS never runs",
+        "Waits asynchronously via `agent_dispatch` for `NixOS/nixpkgs` PR `#888888` `Eval` checks to pass before calling `gh workflow run review.yml`, and captures `workflow_dispatch_exit_status`"
       ]
     }
   ]

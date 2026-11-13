@@ -22,7 +22,7 @@ When adding or removing a skill, update the skills table in `README.md`.
 
 ### Current Skills
 
-- **`nixpkgs-version-bump`** (`skills/nixpkgs-version-bump/`): Automates Nixpkgs package version updates from an issue link or package name through duplicate PR / `nixpkgs-update` log checks, `upstream/master` sync, `nix-update --commit`, sandbox test triage, `nixpkgs-review`, and Draft PR template preparation (without auto-running `gh pr create`).
+- **`nixpkgs-version-bump`** (`skills/nixpkgs-version-bump/`): Automates Nixpkgs package version updates from an issue link or package name through duplicate PR / `nixpkgs-update` log / supported-platform checks, `upstream/master` sync, `nix-update --commit`, sandbox test triage, `nixpkgs-review`, Draft PR template preparation, and user-authorized post-Eval `nixpkgs-review-gha` multi-platform CI triggering (always excluding `x86_64-darwin`).
 - **`background-task-progress`** (`skills/background-task-progress/`): Runs slow commands without foreground `sleep` blocking—using async subagents (`agent_dispatch`) for finite tasks, `run_in_background` for daemons/timeout takeovers, and detached Bash/`pwsh` fallbacks.
 - **`mdatp-optimization`** (`skills/mdatp-optimization/`): Guides macOS users through diagnosing Microsoft Defender for Endpoint (`mdatp` / `wdavdaemon`) CPU overhead, applying built-in performance profiles, managing scoped exclusions, and minimizing optional diagnostic reporting/sample submission within organizational policy boundaries.
 

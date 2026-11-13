@@ -8,7 +8,7 @@ Personal agent skills. They work on my agent. Yours may need instructions.
 |---|---|
 | [background-task-progress](skills/background-task-progress/SKILL.md) | Run long-running commands without foreground `sleep` blocking—using async subagents (`agent_dispatch`) for automatic completion wake-up, native background shells for daemons, and Bash/PowerShell fallbacks. |
 | [mdatp-optimization](skills/mdatp-optimization/SKILL.md) | Diagnose Microsoft Defender performance on macOS, maintain scoped exclusions, and minimize optional reporting where policy permits. |
-| [nixpkgs-version-bump](skills/nixpkgs-version-bump/SKILL.md) | Bump Nixpkgs package versions from an issue or package target, fix local build/test failures, verify with `nixfmt` and `nixpkgs-review`, and prepare upstream Draft PR material. |
+| [nixpkgs-version-bump](skills/nixpkgs-version-bump/SKILL.md) | Bump Nixpkgs package versions from an issue or package target, check supported platforms, fix local build/test failures, verify with `nixfmt` and `nixpkgs-review`, prepare upstream Draft PR material, and trigger user-authorized post-Eval `nixpkgs-review-gha` builds (excluding `x86_64-darwin`). |
 
 ## Repository layout
 
