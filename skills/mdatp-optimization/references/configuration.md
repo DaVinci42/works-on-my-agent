@@ -40,6 +40,20 @@ Use these interfaces to understand policy boundaries and active protection layer
 | Support diagnostics | Top-level `diagnostic` (`create`, `upload`, `perf-trace`, statistics, `hot-event-sources`) | Do not create or upload support bundles without explicit authorization; check `/Library/Application Support/Microsoft/Defender/wdavdiag` for large stale `.zip` bundles |
 | Other interfaces | Top-level `threat`, `device-control`, `system-extension`, `end-user`, `notice` | Threat handling, system extensions, and notices; inspect local help as needed |
 
+## Candidate performance-profile names
+
+Always verify exact availability on the target machine via `mdatp performance-profiles list-available` before applying; names do not establish exact path, code-signing, or child-process matching rules:
+
+| Candidate workload | Common profile names |
+|---|---|
+| Rust / .NET / Java / Ruby / Dart | `rust`, `dotnet-build`, `openjdk-javac`, `ruby`, `flutter-dart` |
+| Apple / Unix build toolchains | `xcode`, `codesign`, `make-tree`, `unix-utils`, `macos-utils` |
+| Git / GitHub CLI | `git`, `github-cli` |
+| Go (not interchangeable) | `google-golang`, `mason-golang`, `sap-golang` |
+| Node.js | `node`, `pnpm`, `volta` |
+| Containers / Android | `docker`, `homebrew-podman`, `podman-desktop`, `macos-container`, `android-studio` |
+| AI coding CLIs and IDEs | `claude-code-cli`, `openai-codex`, `open-code`, `cursor`, `vscode` |
+
 ## Change verification checklist
 
 1. Record the original setting value privately before modifying anything.

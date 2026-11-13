@@ -4,38 +4,45 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Offline reasoning only, do not execute commands: The user wants to run `cargo test --workspace` (takes ~8 minutes) in the background so they can immediately ask questions about another module without blocking the session. How should you launch and track it?",
-      "expected_output": "Launch the command in the background (using host `run_in_background`, Bash `{ trap '' HUP; ...; } </dev/null >\"$LOG_FILE\" 2>&1 &`, or PowerShell `Start-Process -PassThru` with `-EncodedCommand`), verify startup after 1 second, report the literal `BG_PID`/`shell_id` and `LOG_FILE` concisely, and end the turn immediately so the user can ask questions. Piggyback non-blocking status checks on subsequent user turns.",
+      "prompt": "Offline reasoning only, do not execute commands: In Crush (`agent_dispatch`, `agent_status`, and `bash` with default 60s `auto_background_after` are available), the user wants to run `cargo test --workspace` (~8 minutes) in the background so they can ask questions meanwhile and get notified automatically when tests finish. How should you dispatch it so neither the parent nor the subagent stalls or returns prematurely?",
+      "expected_output": "Dispatch via Tier 1 `agent_dispatch` (`access: \"read\"`, optional lightweight model with `off`/`low` reasoning) and instruct the subagent to run `cargo test --workspace` with `auto_background_after: 600`, calling `job_output(shell_id, wait: true)` inside the isolated subagent if it still auto-backgrounds, then return a concise summary. In the parent session, report the subagent name and end the turn immediately without `sleep` or `agent_status` polling; rely on `<subagent-report>` for automatic wake-up and use single non-blocking `agent_status` checks only if the user asks.",
       "files": [],
       "assertions": [
-        "Launches the command in the background without blocking the foreground turn",
-        "Verifies immediate startup state",
-        "Ends the turn after reporting PID or shell_id so the session stays responsive",
-        "Piggybacks non-blocking status checks on subsequent user turns"
+        "Uses Tier 1 `agent_dispatch` and ends the parent turn immediately with zero `sleep` or `agent_status` polling",
+        "Instructs the subagent to raise `auto_background_after` and use `job_output(wait: true)` inside the subagent if auto-backgrounded so >60s builds do not return prematurely",
+        "Relies on `<subagent-report>` to wake the parent session and uses `agent_status` only on demand"
       ]
     },
     {
       "id": 2,
-      "prompt": "Offline reasoning only, do not execute commands: The user asks to run a data migration script in the background and automatically report progress every 15 seconds while they are idle, while keeping the task safe if they interrupt to ask a question. How should you implement the polling?",
-      "expected_output": "Launch the migration detached in the background, then execute one bounded 15-second wait-and-check per tool call (exiting early if the process finishes via `kill -0` loop in Bash or `$p.WaitForExit(15000)` in PowerShell), emit a brief progress update between tool calls, and repeat until completion. Never loop until completion inside a single shell call, and note that interrupting the turn leaves the detached OS process running.",
+      "prompt": "Offline reasoning only, do not execute commands: On a host without `agent_dispatch`, the user asks to run a migration script and explicitly requests automatic chat updates every 15 seconds while idle, keeping the job safe on interrupt. How should you run it?",
+      "expected_output": "Use Opt-In ticker mode only because fixed 15s chat updates were explicitly requested: launch via `run_in_background: true` (or detached OS fallback), run one bounded 15s wait + non-blocking log tail check per tool call, emit brief updates between calls, and revert to non-polling mode after answering any user interrupt unless asked to resume ticking.",
       "files": [],
       "assertions": [
-        "Uses one bounded wait-and-check per tool call rather than an in-shell loop until completion",
-        "Emits visible progress updates between tool calls",
-        "Caps log inspection (`tail -n` or `Get-Content -Tail`) instead of reading full logs",
-        "Preserves the detached background process if the user interrupts the turn"
+        "Treats fixed-interval polling as opt-in only",
+        "Executes one bounded wait-and-check per tool call rather than an unbounded in-shell loop",
+        "Caps log output and reverts to non-polling mode after answering a user interrupt"
       ]
     },
     {
       "id": 3,
-      "prompt": "Offline reasoning only, do not execute commands: Why do `python3 -c 'import time; time.sleep(60)' &` in Bash and `Start-Job` in PowerShell fail or block in CLI agent tool calls, and what quote-safe patterns should be used instead on both platforms?",
-      "expected_output": "In Bash, a raw `&` inherits open stdout/stderr/stdin pipes so the tool runner blocks waiting for EOF, and wrapping with `sh -c '...'` breaks when the command contains single quotes; use a command group `{ trap '' HUP; <command>; ...; } </dev/null >\"$LOG_FILE\" 2>&1 &` instead. In PowerShell, `Start-Job` runs inside the current PowerShell session and terminates as soon as the tool call's subshell exits; use `Start-Process -PassThru` with `-EncodedCommand`, `-RedirectStandardOutput`/`-RedirectStandardError`, and `-WindowStyle Hidden` to create a quote-safe independent OS process.",
+      "prompt": "Offline reasoning only, do not execute commands: On a minimal CLI agent without `agent_dispatch` or `run_in_background`, why do `python3 -c 'import time; time.sleep(60)' &` in Bash and `Start-Job` in PowerShell fail or block, and what detached patterns fix them?",
+      "expected_output": "Raw `&` in Bash inherits open stdio pipes so the runner waits for EOF, and `sh -c '...'` breaks on nested single quotes; use `{ trap '' HUP; <command>; printf '\\n__EXIT_CODE=%s\\n' \"$?\"; } </dev/null >\"$LOG_FILE\" 2>&1 &`. PowerShell `Start-Job` dies when the tool call's session exits; use `Start-Process -PassThru` with `-EncodedCommand`, `-WorkingDirectory $PWD.Path`, redirected output files, and `-WindowStyle Hidden`.",
       "files": [],
       "assertions": [
-        "Identifies inherited stdout/stderr/stdin pipes as the cause of Bash tool runner blocking",
-        "Explains that PowerShell `Start-Job` dies when the tool call's session exits",
-        "Recommends `Start-Process -PassThru` with redirected output on PowerShell/Windows",
+        "Explains inherited stdio pipe blocking in Bash and session-bound `Start-Job` termination in PowerShell",
+        "Uses quote-safe Bash command group with closed stdio and PowerShell `Start-Process -PassThru` with `-EncodedCommand`",
         "Stays read-only without executing commands"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Offline reasoning only, do not execute commands: In Crush, (a) when do you pick `run_in_background: true` over `agent_dispatch`, and (b) what should the main agent do if a regular foreground `bash` call unexpectedly hits the 60s timeout and auto-backgrounds with a `shell_id`?",
+      "expected_output": "(a) Pick `run_in_background: true` for persistent daemons/watchers that never exit on their own (no trailing `&`, no startup `sleep`, no immediate `job_output`). (b) If a foreground `bash` call auto-backgrounds on timeout and returns a `shell_id`, adopt Tier 2 takeover: do not enter a foreground `sleep` + `job_output` loop; finish any unblocked work, report the `shell_id`, and end the turn immediately so the prompt stays responsive.",
+      "files": [],
+      "assertions": [
+        "Uses `run_in_background: true` for persistent daemons without `&`, `sleep`, or immediate `job_output`",
+        "Handles unexpected timeout auto-backgrounding (`shell_id`) by ending the turn after unblocked work instead of starting a foreground `sleep` loop"
       ]
     }
   ]

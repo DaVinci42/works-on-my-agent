@@ -6,7 +6,7 @@ Personal agent skills. They work on my agent. Yours may need instructions.
 
 | Skill | Purpose |
 |---|---|
-| [background-task-progress](skills/background-task-progress/SKILL.md) | Run long-running commands in the background without blocking the foreground session, answer questions while tasks run, and report incremental progress on demand or at scheduled intervals. |
+| [background-task-progress](skills/background-task-progress/SKILL.md) | Run long-running commands without foreground `sleep` blocking—using async subagents (`agent_dispatch`) for automatic completion wake-up, native background shells for daemons, and Bash/PowerShell fallbacks. |
 | [mdatp-optimization](skills/mdatp-optimization/SKILL.md) | Diagnose Microsoft Defender performance on macOS, maintain scoped exclusions, and minimize optional reporting where policy permits. |
 | [nixpkgs-version-bump](skills/nixpkgs-version-bump/SKILL.md) | Bump Nixpkgs package versions from an issue or package target, fix local build/test failures, verify with `nixfmt` and `nixpkgs-review`, and prepare upstream Draft PR material. |
 
