@@ -17,11 +17,11 @@
     {
       "id": 2,
       "prompt": "Offline reasoning only, do not execute commands: During a `nixpkgs` version bump of `example-cli` on macOS, `nix-update --commit example-cli` succeeds in updating the source hash, but `checkPhase` fails because one test tries to bind to `127.0.0.1:0` and another invokes `/bin/echo`. How should you fix the package, format, verify, and finalize the git commit?",
-      "expected_output": "Fix the test environment instead of setting `doCheck = false`: add `__darwinAllowLocalNetworking = true;` for Darwin localhost loopback binding and replace `/bin/echo` using `substituteInPlace` with `lib.getExe'` (`patchShebangs` only affects shebang lines). Format with `nixfmt`, verify with `nix-build --option sandbox true -A example-cli` and a binary smoke test, amend all changes into the single `example-cli: <old> -> <new>` commit (`git commit --amend`) including `Changelog:`/`Diff:` and `Assisted-by: <Tool> (<Model>)` without emoji footers, and run `nixpkgs-review rev HEAD --no-shell`.",
+      "expected_output": "Fix the test environment instead of setting `doCheck = false`: add `__darwinAllowLocalNetworking = true;` for Darwin localhost loopback binding and replace `/bin/echo` using `substituteInPlace` with `lib.getExe'` (`patchShebangs` only affects shebang lines). Format with `nixfmt`, verify with `nix-build --option sandbox true -A example-cli` and a binary smoke test, amend all changes into the single `example-cli: <old> -> <new>` commit (`git commit --amend`) including `Fix: <log-url>` (if applicable), `Changelog:`/`Diff:`, concise rationale for the sandbox test fixes (so it appears in `git blame`), and `Assisted-by: <Tool> (<Model>)` without emoji footers, and run `nixpkgs-review rev HEAD --no-shell`.",
       "files": [],
       "assertions": [
         "Repairs the sandbox test environment (`__darwinAllowLocalNetworking = true` and `substituteInPlace` + `lib.getExe'`) rather than disabling `doCheck`",
-        "Amends the manual fixes into the single `example-cli: <old> -> <new>` commit before or during `nixpkgs-review rev HEAD` verification",
+        "Amends the manual fixes and concise fix/skip rationale into the single `example-cli: <old> -> <new>` commit message (so it shows up in `git blame`) before or during `nixpkgs-review rev HEAD` verification",
         "Includes `Assisted-by: <Tool> (<Model>)` trailer without emoji footers",
         "Stays read-only without executing commands"
       ]

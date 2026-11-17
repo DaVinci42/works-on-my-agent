@@ -11,7 +11,7 @@ description: >-
 
 1. **Default to the latest version**: Run `nix-update --commit <pkg>` without `--version` unless a specific version is requested.
 2. **Require explicit authorization for remote GitHub actions (`git push`, `gh pr create`, `gh workflow run`)**: Prevent wrong-account mistakes and unintended CI runs—output the prepared PR body and `gh auth status` + push + `gh pr create --draft` (and optional `gh workflow run review.yml`) commands first; never execute push, PR creation, or `nixpkgs-review-gha` workflow dispatch unless the user explicitly authorizes it.
-3. **Single commit with disclosure**: Squash update and fixups into one `<pkg>: <old> -> <new>` commit **before** `nixpkgs-review rev HEAD`, including `Changelog:` / `Diff:` links and `Assisted-by: <Tool> (<Model>)` trailer (no emojis).
+3. **Single commit with full rationale & disclosure**: Squash update and fixups into one `<pkg>: <old> -> <new>` commit **before** `nixpkgs-review rev HEAD`. Because Nixpkgs merges without squashing PR descriptions into commits, include `Fix: <log-url>` (when fixing a bot failure), `Changelog:` / `Diff:` links, any non-trivial fix/skip rationale (so it appears in `git blame`), and `Assisted-by: <Tool> (<Model>)` trailer (no emojis) directly in the commit message—not only in the PR body.
 4. **Preserve PR template verbatim**: Prepend `Resolves #<ISSUE>` (and `Fix: <log-url>` when fixing a bot failure) above `.github/PULL_REQUEST_TEMPLATE.md` without removing HTML comments or sections; check `[x]` only for verified items.
 5. **Respect package platforms & never run `x86_64-darwin`**: Inspect `meta.platforms` / `meta.badPlatforms` via `lib.meta.availableOn`, skip local builds if unsupported on the host, and **always set `x86_64-darwin=no`** when preparing or dispatching `nixpkgs-review-gha`.
 
@@ -75,15 +75,19 @@ If `nix-update`, source fetching, or `checkPhase` fails:
 
 ### 4. Squash Commit & Run `nixpkgs-review`
 
-If `nix-update --commit` failed before committing, run `nix-update --commit --version=skip "<pkg>"` (or `git commit`), then `--amend` so `git log upstream/master..HEAD` has exactly one commit:
+If `nix-update --commit` failed before committing, run `nix-update --commit --version=skip "<pkg>"` (or `git commit`), then `--amend` so `git log upstream/master..HEAD` has exactly one commit. Put `Fix: <nixpkgs-update-log-url>` (if applicable) and concise rationale for any build/test fixes or skipped tests into the commit message body alongside the PR description so `git blame` retains the context:
 
 ```bash
 git add -u
 git commit --amend -m "$(cat <<'EOF'
 <pkg>: <old-version> -> <new-version>
 
+Fix: <nixpkgs-update-log-url-if-applicable>
+
 Changelog: <changelog-url>
 Diff: https://github.com/<owner>/<repo>/compare/<old-tag>...<new-tag>
+
+<concise rationale for any build/sandbox test fixes or skipped tests>
 
 Assisted-by: <Tool> (<Model>)
 EOF
