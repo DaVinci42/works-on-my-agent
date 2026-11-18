@@ -24,13 +24,16 @@ description: >-
 
 ### Tier 1: Async Subagent (`agent_dispatch`)
 
-- Set `label` (e.g., `cargo-test`), `access` (`"read"` unless editing files; keep concurrent `"write"` scopes and build locks like `target/` or Nix/Gradle locks strictly disjoint), and optionally a lightweight `model` with minimal `reasoning` (`off` / `low`) for pure command execution + log summarization.
+- **Mandatory model override (`hydrogen`)**: Always explicitly pass `model` set to the available `gemini-4-hydrogen` ID from `agent_dispatch`'s model list (e.g., `model: "copilot/gemini-4-hydrogen"` when on `magpie`, or `model: "gemini-4-hydrogen"` when on `copilot`, with `reasoning: "off"` for pure command runners / watchdogs) instead of omitting `model` and inheriting a slow heavy-reasoning session default. Fall back to another lightweight non-reasoning model only if `gemini-4-hydrogen` is absent from the host's model list.
+- **Single-command dumb-runner rule (zero pre-exploration, zero post-build extras)**: Keep code reading, edits, post-build verification, checksums, and doc updates in the **parent** session. Give an execution subagent **one** blocking command only and forbid extra exploratory or follow-up commands so `<subagent-report>` fires the instant that command exits.
+- Set `label` (e.g., `cargo-test`) and `access` (`"read"` unless the command itself writes build outputs requiring `"write"`; keep concurrent `"write"` scopes and build locks like `target/` or Nix/Gradle/Soong locks strictly disjoint).
 - **Subagent prompt template** (handle `auto_background_after` inside the subagent so >60s commands do not return prematurely):
   ```text
   Working directory: <abs_cwd>
-  Run: <command>
+  Run ONLY this exact command (do NOT run any pre-checks, follow-up verification commands, or file edits):
+  <command>
   Set `auto_background_after: 600` on `bash`; if it still auto-backgrounds and returns a `shell_id`, call `job_output(shell_id, wait: true)` until completion (`wait: true` is allowed inside this isolated subagent).
-  Return concise exit status, duration, artifact paths, and key error lines only.
+  As soon as the command exits, return immediately with exit status, duration, and the last 20 relevant output/error lines only.
   ```
 - After `agent_dispatch`, **never** call `sleep` or `agent_status` to wait—end your turn. Subagents survive user interrupts and follow-up messages.
 
@@ -70,6 +73,7 @@ Never rely on in-memory shell variables (`$BG_PID`, `$job`) across tool calls; p
   - **Tier 3 Bash**: `ps -p <BG_PID> -o pid,%cpu,etime || true; tail -n 15 "<LOG_FILE>"`
   - **Tier 3 PowerShell**: `Get-Process -Id <BG_PID> -ErrorAction SilentlyContinue | Select-Object Id,CPU; Get-Content "<LOG_FILE>","<LOG_FILE>.err" -Tail 15 -ErrorAction SilentlyContinue`
 - **On completion (Tier 1)**: `<subagent-report>` wakes you in a new turn; summarize results and continue dependent steps.
+- **Chained periodic watchdog subagent (when requested for multi-hour builds)**: If the user asks for periodic background progress reports (e.g., every 5–10 minutes) while a Tier 1 build subagent runs, dispatch a separate `"read"` watchdog subagent on `gemini-4-hydrogen` (`reasoning: "off"`) that runs `sleep <N>` (`auto_background_after: <N+60>` + `job_output(wait: true)` if needed) followed by one fast process/log/artifact check, and re-arm the next watchdog only if the main subagent is still running (checking `agent_status` first so a finished main subagent is never missed).
 
 ### Opt-In Only: Fixed-Interval Chat Ticker
 

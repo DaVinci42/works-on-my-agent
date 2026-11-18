@@ -5,12 +5,12 @@
     {
       "id": 1,
       "prompt": "Offline reasoning only, do not execute commands: In Crush (`agent_dispatch`, `agent_status`, and `bash` with default 60s `auto_background_after` are available), the user wants to run `cargo test --workspace` (~8 minutes) in the background so they can ask questions meanwhile and get notified automatically when tests finish. How should you dispatch it so neither the parent nor the subagent stalls or returns prematurely?",
-      "expected_output": "Dispatch via Tier 1 `agent_dispatch` (`access: \"read\"`, optional lightweight model with `off`/`low` reasoning) and instruct the subagent to run `cargo test --workspace` with `auto_background_after: 600`, calling `job_output(shell_id, wait: true)` inside the isolated subagent if it still auto-backgrounds, then return a concise summary. In the parent session, report the subagent name and end the turn immediately without `sleep` or `agent_status` polling; rely on `<subagent-report>` for automatic wake-up and use single non-blocking `agent_status` checks only if the user asks.",
+      "expected_output": "Dispatch via Tier 1 `agent_dispatch` (`access: \"read\"`, explicitly overriding `model` to `gemini-4-hydrogen` / `copilot/gemini-4-hydrogen` with `reasoning: \"off\"`) as a single-command dumb runner: instruct the subagent to run ONLY `cargo test --workspace` with `auto_background_after: 600` (no pre-exploration or follow-up commands/edits), calling `job_output(shell_id, wait: true)` inside the isolated subagent if it still auto-backgrounds, and return immediately upon command exit. In the parent session, report the subagent name and end the turn immediately without `sleep` or `agent_status` polling; rely on `<subagent-report>` for automatic wake-up and use single non-blocking `agent_status` checks only if the user asks.",
       "files": [],
       "assertions": [
-        "Uses Tier 1 `agent_dispatch` and ends the parent turn immediately with zero `sleep` or `agent_status` polling",
-        "Instructs the subagent to raise `auto_background_after` and use `job_output(wait: true)` inside the subagent if auto-backgrounded so >60s builds do not return prematurely",
-        "Relies on `<subagent-report>` to wake the parent session and uses `agent_status` only on demand"
+        "Uses Tier 1 `agent_dispatch` with explicit `gemini-4-hydrogen` (`reasoning: \"off\"`) override and ends the parent turn immediately with zero `sleep` or `agent_status` polling",
+        "Keeps the subagent as a single-command dumb runner (no pre-exploration or post-command extras) and instructs it to raise `auto_background_after` + use `job_output(wait: true)` if auto-backgrounded",
+        "Relies on `<subagent-report>` to wake the parent session immediately on exit and uses `agent_status` only on demand"
       ]
     },
     {
